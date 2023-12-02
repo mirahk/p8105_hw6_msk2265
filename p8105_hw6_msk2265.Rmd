@@ -8,6 +8,7 @@ output: github_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(broom)
+library(modelr)
 ```
 
 
@@ -37,50 +38,54 @@ Use 5000 bootstrap samples and, for each bootstrap sample, produce estimates of 
 boot_sample = function(df) {
   sample_frac(df, replace = TRUE)
 }
+
 ```
 
 ```{r}
-boot_weather= weather_df %>% 
-  modelr::bootstrap(n = 1000) |> 
-  mutate(
-    models = map(strap, \(df) lm(tmax ~ tmin + prcp, data = weather_df) ),
-    results = map(models, broom::tidy)) |> 
-  select(-strap, -models) |> 
-  unnest(results) |> 
-  group_by(term) 
+weather_df %>% 
+  modelr::bootstrap(1000)
 ```
 
 
 ```{r}
-boot_straps = 
-  tibble(strap_number = 1:1000) |> 
+#creating bootstrap samples
+boot_df = weather_df %>% 
+  bootstrap(1000) |> 
   mutate(
-    strap_sample = map(strap_number, \(i) boot_sample(df = weather_df))
+    models = map(strap, ~lm(tmax ~ tmin + prcp, data = .)),
+    results_tidy = map(models, broom::tidy),
+    results_glance = map(models, broom::glance)) |> 
+  select(-strap, -models) %>% 
+  unnest(results_tidy) %>% 
+  unnest(results_glance, names_repair = "minimal") %>% 
+  select(-p.value, -statistic, -std.error) %>% 
+  pivot_wider(
+    names_from = "term",
+    values_from = "estimate"
+  ) %>% 
+  mutate(logbetas=log((prcp*tmin))
   )
 
-boot_straps |> 
-  slice(1:3) |> 
-  mutate(strap_sample = map(strap_sample, arrange, tmin)) |> 
-  pull(strap_sample)
+
 ```
 
 
 ```{r}
-bootstrap_results_tidy = 
-  boot_straps %>%  
-  mutate(
-    models = map(strap_sample, \(df) lm(tmax ~ tmin + prcp, data = weather_df)),
-    tidy_results =map(models, tidy)) %>% 
-  unnest(tidy_results)
-
-bootstrap_results_glance = 
-  boot_straps %>%  
-  mutate(
-    models = map(strap_sample, \(df) lm(tmax ~ tmin + prcp, data = weather_df)),
-    glance_results =map(models, glance)) %>% 
-  unnest(glance_results)
-  
+#plot distribution
+boot_df %>% 
+  ggplot(aes(x = r.squared)) +geom_density()
 ```
+
+
+```{r}
+boot_df %>% 
+  ggplot(aes(x = logbetas)) +geom_density()
+
+
+```
+
+
+
 
 Plot the distribution of your estimates, and describe these in words. Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for r^2
  and log(β^0∗β^1)
