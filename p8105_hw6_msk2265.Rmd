@@ -70,13 +70,15 @@ boot_df = weather_df %>%
 
 ```
 
-
+Plot the distribution of your estimates, and describe these in words. Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for r^2
+ and log(β^0∗β^1)
 ```{r}
 #plot distribution
 boot_df %>% 
   ggplot(aes(x = r.squared)) +geom_density()
 ```
 
+The distribution of r.squared looks to be negatively skewed
 
 ```{r}
 boot_df %>% 
@@ -84,14 +86,14 @@ boot_df %>%
 
 
 ```
-
+The distribution of logbetas is shows a stronger negative skew than the r.sqauared distribution 
 ```{r}
 boot_df %>% 
   summarise(med=median(r.squared),
             lowerqt=quantile(r.squared, 0.025),
             upperqt=quantile(r.squared, 0.975))
 ```
-
+quantiles of r.squared are in the table above
 ```{r}
 boot_df %>% 
   summarise(med=median(logbetas, na.rm=TRUE),
@@ -99,15 +101,12 @@ boot_df %>%
             upperqt=quantile(logbetas, 0.975, na.rm=TRUE))
 ```
 
+quantiles of logbetas are in the table above.
 
 
-Plot the distribution of your estimates, and describe these in words. Using the 5000 bootstrap estimates, identify the 2.5% and 97.5% quantiles to provide a 95% confidence interval for r^2
- and log(β^0∗β^1)
- 
-. Note: broom::glance() is helpful for extracting r^2
- from a fitted regression, and broom::tidy() (with some additional wrangling) should help in computing log(β^1∗β^2)
-.
+##Problem 3
 ```{r}
+#tidy data
 birth_weight_df = read_csv("./Data/birthweight.csv") %>% 
   mutate(
     babysex = 
@@ -141,6 +140,8 @@ birth_weight_df = read_csv("./Data/birthweight.csv") %>%
 ```
 
 Propose a regression model for birthweight. This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. Describe your modeling process and show a plot of model residuals against fitted values – use add_predictions and add_residuals in making this plot.
+
+The fist thing I evaluated when making my model, was several scatterplots to visualize the relationship between bwt and other numeric variables. The plots are below:
 ```{r}
 #model1
 #making plots to see if I can see relationships:
@@ -160,7 +161,11 @@ birth_weight_df %>% ggplot(aes(x=ppbmi, y=bwt))+geom_point()
 birth_weight_df %>% ggplot(aes(x=ppwt, y=bwt))+geom_point()
 birth_weight_df %>% ggplot(aes(x=smoken, y=bwt))+geom_point()
 birth_weight_df %>% ggplot(aes(x=wtgain, y=bwt))+geom_point()
+```
+ 
+Second, I compared the categorical variables by calculating averages. 
 
+```{r}
 birth_weight_df %>% 
   group_by(babysex) %>% 
   summarise(avwt=mean(bwt)) %>% 
@@ -183,6 +188,7 @@ birth_weight_df %>%
   ungroup()
 #not that different
 ```
+Based on all of those results, and the results of my scatter plots, I came up with the model below. I would like to note that hypothesis tests would have been a good idea for the categorical variables above to detwemine if there averages are statistically significantly different or not, and I would do that in a full report. I would also probably calculate correlation coefficiants for the scatterplots. 
 
 
 ```{r}
@@ -197,7 +203,7 @@ birth_weight_df %>%
   add_predictions(model1) %>% 
   ggplot(aes(x=resid, y=pred)) +geom_point()
 ```
-
+All three of the predictors I chose are significant, based on the p values. The residuals versus fitted values plot indicates equal variance because the points hover around 0 for the resid, with some outliers that have a high resid. 
 Compare your model to two others:
 
 One using length at birth and gestational age as predictors (main effects only)
@@ -246,4 +252,4 @@ cv_df |>
   ggplot(aes(x = model, y = rmse)) + geom_violin()
 ```
 
-Note that although we expect your model to be reasonable, model building itself is not a main idea of the course and we don’t necessarily expect your model to be “optimal”.
+Based on the violin graph, I can see that my model, and the 3rd model are the best fit, since the rmse is smallest.
