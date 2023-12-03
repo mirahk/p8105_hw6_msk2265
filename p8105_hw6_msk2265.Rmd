@@ -84,6 +84,19 @@ boot_df %>%
 
 ```
 
+```{r}
+boot_df %>% 
+  summarise(med=median(r.squared),
+            lowerqt=quantile(r.squared, 0.025),
+            upperqt=quantile(r.squared, 0.975))
+```
+
+```{r}
+boot_df %>% 
+  summarise(med=median(logbetas, na.rm=TRUE),
+            lowerqt=quantile(logbetas, 0.025, na.rm=TRUE),
+            upperqt=quantile(logbetas, 0.975, na.rm=TRUE))
+```
 
 
 
