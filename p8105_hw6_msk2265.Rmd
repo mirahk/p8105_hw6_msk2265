@@ -9,6 +9,7 @@ output: github_document
 library(tidyverse)
 library(broom)
 library(modelr)
+library(mgcv)
 ```
 
 
@@ -50,7 +51,7 @@ weather_df %>%
 ```{r}
 #creating bootstrap samples
 boot_df = weather_df %>% 
-  bootstrap(1000) |> 
+  bootstrap(5000) |> 
   mutate(
     models = map(strap, ~lm(tmax ~ tmin + prcp, data = .)),
     results_tidy = map(models, broom::tidy),
@@ -137,8 +138,94 @@ birth_weight_df = read_csv("./Data/birthweight.csv") %>%
         1 ~ "present")
       )
       
-    
-      
-  
 ```
 
+Propose a regression model for birthweight. This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. Describe your modeling process and show a plot of model residuals against fitted values – use add_predictions and add_residuals in making this plot.
+```{r}
+#model1
+#making plots to see if I can see relationships:
+
+birth_weight_df %>% ggplot(aes(x=bhead, y=bwt))+geom_point()
+#shows kinda linear
+birth_weight_df %>% ggplot(aes(x=blength, y=bwt))+geom_point()
+#shows kinda linear
+birth_weight_df %>% ggplot(aes(x=delwt, y=bwt))+geom_point()
+birth_weight_df %>% ggplot(aes(x=fincome, y=bwt))+geom_point()
+birth_weight_df %>% ggplot(aes(x=gaweeks, y=bwt))+geom_point()
+#shows kinda linear
+birth_weight_df %>% ggplot(aes(x=menarche, y=bwt))+geom_point()
+birth_weight_df %>% ggplot(aes(x=mheight, y=bwt))+geom_point()
+birth_weight_df %>% ggplot(aes(x=momage, y=bwt))+geom_point()
+birth_weight_df %>% ggplot(aes(x=ppbmi, y=bwt))+geom_point()
+birth_weight_df %>% ggplot(aes(x=ppwt, y=bwt))+geom_point()
+birth_weight_df %>% ggplot(aes(x=smoken, y=bwt))+geom_point()
+birth_weight_df %>% ggplot(aes(x=wtgain, y=bwt))+geom_point()
+
+birth_weight_df %>% 
+  group_by(babysex) %>% 
+  summarise(avwt=mean(bwt)) %>% 
+  ungroup()
+#not that different
+
+birth_weight_df %>% 
+  group_by(frace) %>% 
+  summarise(avwt=mean(bwt)) %>% 
+  ungroup()
+#not that different
+birth_weight_df %>% 
+  group_by(mrace) %>% 
+  summarise(avwt=mean(bwt)) %>% 
+  ungroup()
+#not that diffeent
+birth_weight_df %>% 
+  group_by(malform) %>% 
+  summarise(avwt=mean(bwt)) %>% 
+  ungroup()
+#not that different
+```
+
+
+```{r}
+
+model1 = lm(bwt ~ bhead + gaweeks + blength, data = birth_weight_df)
+summary(model1)
+
+#plot residuals against fitted values
+
+birth_weight_df %>% 
+  add_residuals(model1) %>% 
+  add_predictions(model1) %>% 
+  ggplot(aes(x=resid, y=pred)) +geom_point()
+```
+
+Compare your model to two others:
+
+One using length at birth and gestational age as predictors (main effects only)
+```{r}
+model2 = lm(bwt ~ blength + gaweeks, data = birth_weight_df)
+summary(model2)
+```
+
+One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
+```{r}
+model3 = lm(bwt ~ bhead + blength + babysex +bhead*blength +bhead*babysex +blength*babysex + bhead*blength*babysex , data = birth_weight_df)
+summary(model3)
+```
+
+Make this comparison in terms of the cross-validated prediction error; use crossv_mc and functions in purrr as appropriate.
+
+```{r}
+cv_df = crossv_mc(birth_weight_df, 100)
+cv_df |> pull(train) |> nth(1) |> as_tibble()
+cv_df |> pull(test) |> nth(1) |> as_tibble()
+cv_df =
+ 
+   cv_df |> 
+  mutate(
+    train = map(train, as_tibble),
+    test = map(test, as_tibble))
+
+
+```
+
+Note that although we expect your model to be reasonable, model building itself is not a main idea of the course and we don’t necessarily expect your model to be “optimal”.
