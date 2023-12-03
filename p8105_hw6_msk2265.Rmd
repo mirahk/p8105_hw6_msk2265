@@ -106,3 +106,39 @@ Plot the distribution of your estimates, and describe these in words. Using the 
 . Note: broom::glance() is helpful for extracting r^2
  from a fitted regression, and broom::tidy() (with some additional wrangling) should help in computing log(β^1∗β^2)
 .
+```{r}
+birth_weight_df = read_csv("./Data/birthweight.csv") %>% 
+  mutate(
+    babysex = 
+      case_match(
+        babysex,
+        1 ~ "male",
+        2 ~ "female"),
+    frace =
+      case_match(
+        frace,
+        1 ~ "white",
+        2 ~ "black",
+        3 ~ "asian",
+        4 ~ "puerto rican",
+        8 ~ "other"),
+    mrace =
+      case_match(
+        mrace,
+        1 ~ "white",
+        2 ~ "black",
+        3 ~ "asian",
+        4 ~ "puerto rican",
+        8 ~ "other"),
+    malform =
+      case_match(
+        malform,
+        0 ~ "absent",
+        1 ~ "present")
+      )
+      
+    
+      
+  
+```
+
